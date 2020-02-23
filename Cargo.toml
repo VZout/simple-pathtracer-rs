@@ -1,0 +1,33 @@
+[package]
+name = "rust_gl"
+version = "0.1.0"
+authors = ["Viktor Zoutman <viktor@vzout.com>"]
+edition = "2018"
+description = "A simple CPU raytracer which abstracts all non-raytracing code"
+homepage = "https://vzout.com"
+keywords = ["raytracing", "multi-threading", "simd", "opengl"]
+categories = ["graphics"]
+license = "MIT"
+
+[profile.release]
+lto = true
+panic = 'abort'
+
+[dependencies]
+glm = "0.2.3"
+
+[dependencies.bvh]
+version = "0.3.1"
+
+[dependencies.rand]
+version = "0.7.3"
+
+[dependencies.crossbeam]
+version = "0.7.3"
+
+[dependencies.gl]
+version = "0.14.0"
+
+[dependencies.sdl2]
+git = "https://github.com/Rust-SDL2/rust-sdl2"
+features = ["image", "unsafe_textures"]

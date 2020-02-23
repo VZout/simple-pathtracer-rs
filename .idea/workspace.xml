@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="BuildServerSettings">
+    <option name="LOGIN" value="" />
+    <option name="SERVER_URL" value="http://buildserver" />
+    <option name="REMEMBER_ME" value="true" />
+    <option name="USE_IDEA_PROXY_SETTINGS" value="true" />
+    <option name="INSPECTIONS_BUILD_TYPE_IDS" />
+    <option name="DUPLICATES_BUILD_TYPE_IDS" />
+    <option name="ENABLE_SUITABLE_CONFIGURATION_CACHING" value="true" />
+    <option name="COVERAGE_SETTINGS" />
+    <option name="TEST_STATUS_ENABLED" value="true" />
+    <option name="TEST_STATUS_SHOW_SUCCESSFUL" value="false" />
+    <option name="POSTPONE_SUITABLE_CONFIGURATIONS_SEARCH" value="false" />
+    <option name="ARTIFACTS_BUILD_TYPE_IDS" />
+    <option name="PERFORM_COMMIT_IF_SUCCESSFUL" value="true" />
+    <option name="PERFORM_COMMIT_IF_NO_NEW_FAILED_TESTS" value="false" />
+    <option name="REQUEST_CONFIRMATON" value="false" />
+    <option name="PRE_TESTED_COMMIT" value="true" />
+    <option name="FILTER_BY_STATUS" value="false" />
+    <option name="FILTER_MARKED_AS_FIXED" value="false" />
+    <option name="SHOW_CLOSE_PROMPT" value="true" />
+    <option name="TOOL_WINDOW_SELECTED_CONTENT_INDEX" value="0" />
+    <option name="FILTER_BY_CURRENT_PROJECT" value="true" />
+    <option name="showStatusBarWidget" value="true" />
+  </component>
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="2d950752-a147-49fe-b219-c37c388fab85" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FavoritesManager">
+    <favorites_list name="rust_gl" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="nkFRIGcU" />
+  </component>
+  <component name="ProjectId" id="1Y1aC6mlWXFiPKC4Vfzt2varzYT" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="full.screen.before.presentation.mode" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
+    <property name="settings.editor.selected.configurable" value="preferences.sourceCode.Rust" />
+  </component>
+  <component name="RunManager" selected="Cargo Command.Run Release">
+    <configuration name="Run Debug" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run" />
+      <option name="allFeatures" value="false" />
+      <option name="nocapture" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run Release" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run --release RUSTFLAGS=&quot;-Ctarget-cpu=native&quot;" />
+      <option name="allFeatures" value="false" />
+      <option name="nocapture" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Cargo Command.Run Debug" />
+      <item itemvalue="Cargo Command.Run Release" />
+    </list>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+    <option name="version" value="2" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="374" y="276" key="#Run" timestamp="1582112576836">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="374" y="276" key="#Run/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582112576836" />
+    <state x="374" y="276" key="#Run_Release" timestamp="1582123387866">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="374" y="276" key="#Run_Release/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582123387866" />
+    <state x="414" y="195" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1582494602364">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="-1506" y="195" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1080/-1920.0.1920.1080@-1920.0.1920.1080" timestamp="1582493898164" />
+    <state x="414" y="195" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582494602364" />
+    <state x="739" y="295" key="FileChooserDialogImpl" timestamp="1582123386156">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="739" y="295" key="FileChooserDialogImpl/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582123386156" />
+    <state width="1921" height="229" key="GridCell.Tab.0.bottom" timestamp="1582495700119">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1921" height="210" key="GridCell.Tab.0.bottom.inPresentationMode" timestamp="1582197629662">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1921" height="210" key="GridCell.Tab.0.bottom.inPresentationMode/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582197629662" />
+    <state width="1921" height="229" key="GridCell.Tab.0.bottom/0.0.1920.1080/-1920.0.1920.1080@-1920.0.1920.1080" timestamp="1582493899247" />
+    <state width="1921" height="229" key="GridCell.Tab.0.bottom/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582495700119" />
+    <state width="1921" height="229" key="GridCell.Tab.0.center" timestamp="1582495700118">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1921" height="210" key="GridCell.Tab.0.center.inPresentationMode" timestamp="1582197629662">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1921" height="210" key="GridCell.Tab.0.center.inPresentationMode/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582197629662" />
+    <state width="1921" height="229" key="GridCell.Tab.0.center/0.0.1920.1080/-1920.0.1920.1080@-1920.0.1920.1080" timestamp="1582493899247" />
+    <state width="1921" height="229" key="GridCell.Tab.0.center/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582495700118" />
+    <state width="1921" height="229" key="GridCell.Tab.0.left" timestamp="1582495700118">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1921" height="210" key="GridCell.Tab.0.left.inPresentationMode" timestamp="1582197629662">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1921" height="210" key="GridCell.Tab.0.left.inPresentationMode/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582197629662" />
+    <state width="1921" height="229" key="GridCell.Tab.0.left/0.0.1920.1080/-1920.0.1920.1080@-1920.0.1920.1080" timestamp="1582493899247" />
+    <state width="1921" height="229" key="GridCell.Tab.0.left/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582495700118" />
+    <state width="1921" height="229" key="GridCell.Tab.0.right" timestamp="1582495700118">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1921" height="210" key="GridCell.Tab.0.right.inPresentationMode" timestamp="1582197629662">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1921" height="210" key="GridCell.Tab.0.right.inPresentationMode/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582197629662" />
+    <state width="1921" height="229" key="GridCell.Tab.0.right/0.0.1920.1080/-1920.0.1920.1080@-1920.0.1920.1080" timestamp="1582493899247" />
+    <state width="1921" height="229" key="GridCell.Tab.0.right/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582495700118" />
+    <state x="616" y="69" width="1130" height="710" key="SettingsEditor" timestamp="1582197519990">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="616" y="69" width="1130" height="710" key="SettingsEditor/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582197519990" />
+    <state x="-1264" y="271" width="607" height="538" key="find.popup" timestamp="1582494020575">
+      <screen x="-1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="-1264" y="271" width="607" height="538" key="find.popup/0.0.1920.1080/-1920.0.1920.1080@-1920.0.1920.1080" timestamp="1582494020575" />
+    <state x="-1297" y="235" width="672" height="678" key="search.everywhere.popup" timestamp="1582493735247">
+      <screen x="-1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="-1297" y="235" width="672" height="678" key="search.everywhere.popup/0.0.1920.1080/-1920.0.1920.1080@-1920.0.1920.1080" timestamp="1582493735247" />
+    <state x="623" y="235" width="672" height="678" key="search.everywhere.popup/0.0.1920.1080/-1920.0.1920.1080@0.0.1920.1080" timestamp="1582200931157" />
+  </component>
+</project>
