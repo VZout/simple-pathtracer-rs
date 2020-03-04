@@ -1,5 +1,4 @@
 extern crate sdl2;
-extern crate rand;
 extern crate crossbeam;
 extern crate glm;
 
@@ -9,155 +8,101 @@ mod sphere;
 mod resource_manager;
 mod shape;
 mod material;
+mod model;
+mod triangle;
+mod random;
+mod disney;
+mod camera;
 
+use rand::rngs::SmallRng as RandGenerator;
 use crossbeam::thread;
 use std::time::{Duration, Instant};
 use application::*;
+use model::*;
+use random::*;
 use scene::*;
 use sphere::*;
 use material::*;
-use resource_manager::*;
-use rand::Rng;
-use std::f32::consts::PI;
+use camera::*;
+use rayon::prelude::*;
+use crate::disney::*;
 
-struct Camera
-{
-    pos: glm::Vec3,
-    aspect_ratio: f32,
-    up: glm::Vec3,
-    half_fov: f32,
-    right: glm::Vec3,
-    lens_radius: f32,
-    forward: glm::Vec3,
-    focal_dist: f32,
-    viewport_width: u32,
-    viewport_height: u32,
-}
-
-impl Copy for Camera {}
-impl Clone for Camera {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
+static NUM_THREADS: u32 = 8;
 
 struct MyApp
 {
-    start: Instant,
     fps_start: Instant,
     frame: u32,
     accumulation_idx: u32,
     camera: Camera,
     scene: SceneGraph,
     material_manager: MaterialManager,
+    model_manager: ModelManager,
 }
 
-fn camera_to_world(v: glm::Vec3, right: glm::Vec3, up: glm::Vec3, forward: glm::Vec3) -> glm::Vec3
+fn parse_pixel(pixel: &mut Pixel, pos: glm::Vec2, camera: &Camera, scene: &SceneGraph, material_manager: &MaterialManager, accum_idx: u32, rng: &mut RandGenerator)
 {
-    let v = glm::vec3(v.x, v.y * -1f32, v.z);
-    return right * v.x + up * v.y + forward * v.z;
-}
-
-fn sample_disk_concentric(u: glm::Vec2) -> glm::Vec2
-{
-    let up = (u * 2f32) - glm::vec2(1f32, 1f32);
-    if up == glm::vec2(0f32, 0f32)
-    {
-        return glm::vec2(0f32, 0f32);
-    }
-    else
-    {
-        let mut r = 0f32;
-        let mut theta = 0f32;
-
-        if up.x.abs() > up.y.abs()
-        {
-            r = up.x;
-            theta = 0.25 * PI * (up.y / up.x);
-        }
-        else
-        {
-            r = up.y;
-            theta = 0.5 * PI - 0.25 * PI * (up.x / up.y);
-        }
-
-        return glm::vec2(theta.cos(), theta.sin()) * r;
-    }
-}
-
-fn generate_camera_ray(pixel_uv: glm::Vec2, lens_uv: glm::Vec2, p: &mut glm::Vec3, wo: &mut glm::Vec3, camera: &Camera)
-{
-    let up = camera.up;
-    let right = camera.right;
-    let forward = camera.forward;
-
-    let tx = camera.half_fov * camera.aspect_ratio * (2f32 * pixel_uv.x - 1f32);
-    let ty = camera.half_fov * (2f32 * pixel_uv.y - 1f32);
-
-    let mut p_camera  = glm::vec3(0f32, 0f32, 0f32);
-    let mut wo_camera = glm::normalize(glm::vec3(tx, ty, 1.0));
-
-    // Depth of Field
-    if camera.lens_radius > 0.0
-    {
-        let t_focus = camera.focal_dist / wo_camera.z;
-        let p_focus = wo_camera * t_focus;
-        let temp = sample_disk_concentric(lens_uv) * camera.lens_radius;
-        p_camera.x = temp.x;
-        p_camera.y = temp.y;
-        wo_camera = glm::normalize(p_focus - p_camera);
-    }
-
-    *p  = camera_to_world(p_camera, right, up, forward) + camera.pos;
-    *wo = camera_to_world(wo_camera, right, up, forward);
-}
-
-#[allow(dead_code)]
-fn next_rand() -> f32
-{
-    let mut rng = rand::thread_rng();
-    return rng.gen_range(0f32, 1f32);
-}
-
-#[allow(dead_code)]
-fn next_rand_v2() -> glm::Vec2
-{
-    let mut rng = rand::thread_rng();
-    return glm::vec2(rng.gen_range(0f32, 1f32), rng.gen_range(0f32, 1f32));
-}
-
-fn parse_pixel(pixel: &mut Pixel, pos: glm::UVec2, camera: &Camera, scene: &SceneGraph, material_manager: &MaterialManager, accum_idx: u32)
-{
-    let pos_f = glm::vec2(pos.x as f32, pos.y as f32);
     let pixel_size = glm::vec2(1f32 / camera.viewport_width as f32, 1f32 / camera.viewport_height as f32);
-    let pixel_pos = pos_f * pixel_size;
+    let pixel_pos = pos * pixel_size;
 
-    let jitter = pixel_size * (next_rand_v2() - 0.5);
-    let lens_uv  = next_rand_v2();
+    let jitter = pixel_size * (next_rand_v2(rng) - 0.5);
+    let lens_uv  = next_rand_v2(rng);
     let pixel_uv = pixel_pos + jitter;
 
     let mut origin = glm::vec3(0f32, 0f32, 0f32);
     let mut direction = glm::vec3(0f32, 0f32, 0f32);
     generate_camera_ray(pixel_uv, lens_uv, &mut origin, &mut direction, camera);
 
-    let hit = scene.traverse(origin, direction);
+    let max_depth = 3;
+    let mut ray_color = glm::vec3(0f32, 0f32, 0f32);
+    let mut throughput = glm::vec3(1f32, 1f32, 1f32);
 
-    let mut color = glm::vec3(120f32 / 255f32, 190f32 / 255f32, 227f32 / 255f32);
-    if let Some(hit) = &hit
+    for _ in 0..max_depth
     {
-        let ambient = glm::vec3(0.1f32, 0.1f32, 0.1f32);
+        let hit = scene.traverse(origin, direction);
+        let v = -direction;
 
-        let L = glm::normalize(glm::vec3(0f32, -1f32, -0.5f32));
-        let diff = glm::max(glm::dot(hit.normal, L), 0.0);
-        let diffuse = glm::vec3(1f32, 1f32, 1f32) * diff;
+        if let Some(hit) = &hit
+        {
+            let material = material_manager.get(&hit.material_id).unwrap();
 
-        let albedo = material_manager.get(&hit.material_id).unwrap().color;
+            //let color = disney::direct_lighting(&scene, &hit, &material, v) * throughput;
+            let color = glm::vec3(0f32, 0f32, 0f32);
 
-        color = (ambient + diffuse) * albedo;
+            let bsdf_dir = disney::sample(&hit, &material, v, rng);
+
+            let l = bsdf_dir;
+            let h = glm::normalize(v + l);
+
+            let n_dot_v = glm::dot(hit.normal, v).abs().max(MIN_N_DOT_V);
+            let n_dot_l = glm::dot(hit.normal, l).abs();
+            let n_dot_h = glm::dot(hit.normal, h).abs();
+            let l_dot_h = glm::dot(l, h).abs();
+
+            let pdf = disney::pdf(&hit, &material, v, l);
+            if pdf > 0f32
+            {
+                let occlusion = (!(n_dot_l <= 0f32 || n_dot_v <= 0f32)) as i32 as f32;
+                throughput = throughput * ((disney::evaluate(&material, n_dot_l, n_dot_v, n_dot_h, l_dot_h) * occlusion) / pdf);
+            }
+            else
+            {
+                break;
+            }
+
+            ray_color = color;
+            origin = hit.pos;
+            direction = bsdf_dir;
+        }
+        else
+        {
+            ray_color = throughput * glm::vec3(0.7f32, 0.7f32, 0.7f32);
+            break;
+        }
     }
 
     let prev = glm::vec3(pixel.r, pixel.g, pixel.b);
-    let new = glm::vec3(color.x, color.y, color.z);
+    let new = glm::vec3(ray_color.x, ray_color.y, ray_color.z);
     let result = (prev * accum_idx as f32 + new) / (accum_idx as f32 + 1f32);
 
     pixel.r = result.x;
@@ -182,27 +127,31 @@ impl MyApp
     }
 }
 
-impl Renderer for MyApp {
+impl Renderer for MyApp
+{
     fn init(&mut self, _app: &mut Application)
     {
-        let _ = self.material_manager.place(&materials::RED);
-        let _ = self.material_manager.place(&materials::GREEN);
-        let _ = self.material_manager.place(&materials::BLUE);
+        rayon::ThreadPoolBuilder::new().num_threads(NUM_THREADS as usize).build_global().unwrap();
 
-        let mut rng = rand::thread_rng();
+        let _ = self.material_manager.place(materials::GLOSSY_WHITE);
+        let _ = self.material_manager.place(materials::GREEN);
+        let _ = self.material_manager.place(materials::GLOSSY_ORANGE);
+        let _ = self.material_manager.place(materials::BLUE);
+
+        let mut rng = create_rand_generator();
         let scene_width = 20f32;
         let scene_height = 20f32;
 
         for _ in 0..100
         {
-            let material_id = rng.gen_range(0u32, 3u32);
+            let material_id = rand_u32_r(0u32, 3u32, &mut rng);
 
-            self.scene.add(Sphere
+            self.scene.add_sphere(Sphere
             {
                 pos: glm::vec3(
-                    rng.gen_range(-scene_width, scene_width),
-                    rng.gen_range(-scene_height, scene_height),
-                    rng.gen_range(20f32, 30f32)
+                    rand_f32_r(-scene_width, scene_width, &mut rng),
+                    rand_f32_r(-scene_height, scene_height, &mut rng),
+                    rand_f32_r(20f32, 30f32, &mut rng)
                 ),
                 radius: 1f32,
                 material_id,
@@ -210,21 +159,47 @@ impl Renderer for MyApp {
             });
         }
 
+        let model_handle = self.model_manager.load("test.fbx");
+        let model = self.model_manager.get(&model_handle);
+
+        let model_matrix = glm::mat3(
+            1f32, 0f32, 0f32,
+            0f32, 1f32, 0f32,
+            0f32, 0f32, 1f32,
+        );
+
+        let mut material_id = 0u32;
+        for mesh in &model.unwrap().meshes
+        {
+            for i in (0..mesh.indices.len()).step_by(3)
+            {
+                let mut v0 = mesh.vertices[mesh.indices[i + 0] as usize];
+                let mut v1 = mesh.vertices[mesh.indices[i + 1] as usize];
+                let mut v2 = mesh.vertices[mesh.indices[i + 2] as usize];
+
+                v0.pos = model_matrix * v0.pos;
+                v1.pos = model_matrix * v1.pos;
+                v2.pos = model_matrix * v2.pos;
+
+                self.scene.add_tri(v0, v1, v2, material_id);
+            }
+
+            material_id += 1;
+        }
+
         self.scene.build();
     }
 
     fn render(&mut self, app: &mut Application)
     {
-        //self.camera.pos.z = (self.start.elapsed().as_secs_f32()).sin() * 5f32 + 5f32;
-
         let num_pixels = app.back_buffer.width * app.back_buffer.height;
-        let num_threads = 8;
-        let thread_size = (num_pixels / num_threads) as usize;
+        let thread_size = (num_pixels / NUM_THREADS) as usize;
 
         let bb_width = app.back_buffer.width.clone();
         let pixels = &mut app.back_buffer.pixels;
         let accum_idx = self.accumulation_idx;
 
+        /*
         thread::scope(|s|
         {
             let pixels = &pixels; // shadowing the closures move...
@@ -236,20 +211,22 @@ impl Renderer for MyApp {
                 let start = thread_size * thread_id as usize;
                 let camera = self.camera.clone();
                 let scene = &self.scene;
-                let material_maanger = &self.material_manager;
+                let material_manger = &self.material_manager;
 
                 let handle = s.spawn(move |_| unsafe
                 {
+                    let mut rng = create_rand_generator();
+
                     for i in start..start + thread_size
                     {
-                        let pixel_pos = glm::uvec2(
-                            i as u32 % bb_width,
-                            (i as f32 / bb_width as f32).floor() as u32
+                        let pixel_pos = glm::vec2(
+                            i as f32 % bb_width as f32,
+                            (i as f32 / bb_width as f32).floor()
                         );
 
                         // To avoid the borrow checker I use pointers here so I can access 1 array from multiple threads...
                         let pixel = (pixels.as_ptr() as *mut Pixel).offset(i as isize);
-                        parse_pixel(&mut *pixel, pixel_pos, &camera, &scene, &material_maanger, accum_idx);
+                        parse_pixel(&mut *pixel, pixel_pos, &camera, &scene, &material_manger, accum_idx, &mut rng);
                     }
                 });
 
@@ -261,39 +238,40 @@ impl Renderer for MyApp {
                 handle.join().unwrap();
             }
         }).unwrap();
-
-       /*
-       let mut pixel_pos = glm::uvec2( 0u32, 0u32 );
-        for pixel in pixels
-        {
-            parse_pixel(pixel, pixel_pos, &self.camera, &self.scene, &self.material_manager, self.accumulation_idx);
-
-            pixel_pos.x += 1;
-            if pixel_pos.x >= app.back_buffer.width
-            {
-                pixel_pos.x = 0;
-                pixel_pos.y += 1;
-            }
-        }
         */
+
+        ///* Rayon
+        (0..num_pixels).into_par_iter().for_each(|i| unsafe
+        {
+            let mut rng = create_rand_generator();
+
+            let pixel_pos = glm::vec2(
+                i as f32 % bb_width as f32,
+                (i as f32 / bb_width as f32).floor()
+            );
+
+            let pixel = (pixels.as_ptr() as *mut Pixel).offset(i as isize);
+            parse_pixel(&mut *pixel, pixel_pos, &self.camera, &self.scene, &self.material_manager, self.accumulation_idx, &mut rng);
+        });
 
         self.calc_fps();
     }
 }
 
+// glam -> reciprocal???
 fn main()
 {
     let back_buffer_width = 600;
     let back_buffer_height = 600;
 
-    let fov = 80f32;
+    let fov = 45f32;
     let aspect_ratio = back_buffer_width as f32 / back_buffer_height as f32;
-    let lens_dim = 2f32;
-    let focal_dist = 20f32;
+    let lens_dim = 0f32;
+    let focal_dist = 10f32;
 
     let camera = Camera
     {
-        pos: glm::vec3(0f32, 0f32, 0f32),
+        pos: glm::vec3(0f32, 0f32, -10f32),
         aspect_ratio,
         up: glm::vec3(0f32, 1f32, 0f32),
         half_fov: (0.5f32 * fov.to_radians()).tan(),
@@ -307,13 +285,22 @@ fn main()
 
     let scene = SceneGraph
     {
-        objects: Vec::new(),
+        spheres: Vec::new(),
+        triangles: Vec::new(),
         bvh: None,
     };
 
     let now = Instant::now();
 
-    let mut app = MyApp{ start: now, fps_start: now, frame: 0, accumulation_idx: 0, camera, scene, material_manager: MaterialManager::new() };
+    let mut app = MyApp{
+        fps_start: now,
+        frame: 0,
+        accumulation_idx: 0,
+        camera,
+        scene,
+        material_manager: MaterialManager::new(MaterialLoader{}),
+        model_manager: ModelManager::new(ModelLoader{})
+    };
 
     AppBuilder::new("My Raytracer", back_buffer_width, back_buffer_height)
         .start(&mut app);

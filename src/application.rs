@@ -140,7 +140,7 @@ impl AppBuilder
             // Copy texture to back buffer.
             gl::BlitFramebuffer(0, 0, texture.width as i32, texture.height as i32,
                                 0, 0, self.width as i32, self.height as i32,
-                                gl::COLOR_BUFFER_BIT, gl::LINEAR);
+                                gl::COLOR_BUFFER_BIT, gl::NEAREST);
 
             // Unbind the color attachments.
             gl::FramebufferTexture(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT1, 0, 0);

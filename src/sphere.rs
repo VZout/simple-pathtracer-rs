@@ -37,22 +37,19 @@ impl BHShape for Sphere
 }
 
 impl Shape for Sphere {
-    fn intersect(&self, origin: glm::Vec3, direction: glm::Vec3) -> Option<f32>
+    fn intersect(&self, origin: glm::Vec3, direction: glm::Vec3, _barry: &mut glm::Vec2) -> Option<f32>
     {
-        let mut t0 = 0f32;
-        let mut t1 = 0f32;
-
         let radius2 = self.radius;
 
-        let L = self.pos - origin;
-        let tca = glm::dot(L, direction);
+        let l = self.pos - origin;
+        let tca = glm::dot(l, direction);
 
         if tca < 0f32
         {
             return None;
         }
 
-        let d2 = glm::dot(L, L) - tca * tca;
+        let d2 = glm::dot(l, l) - tca * tca;
 
         if d2 > radius2
         {
@@ -60,8 +57,8 @@ impl Shape for Sphere {
         }
 
         let thc = (radius2 - d2).sqrt();
-        t0 = tca - thc;
-        t1 = tca + thc;
+        let mut t0 = tca - thc;
+        let mut t1 = tca + thc;
 
         if t0 > t1
         {
@@ -80,7 +77,7 @@ impl Shape for Sphere {
         return Some(t0);
     }
 
-    fn get_normal(&self, hit_pos: glm::Vec3) -> glm::Vec3
+    fn get_normal(&self, hit_pos: glm::Vec3, _barry: glm::Vec2) -> glm::Vec3
     {
         return glm::normalize(hit_pos - self.pos);
     }
@@ -89,4 +86,6 @@ impl Shape for Sphere {
     {
         return self.material_id;
     }
+
+    fn get_tangents(&self, _normal: glm::Vec3, _tangent: &mut glm::Vec3, _bitangent: &mut glm::Vec3, _barry: glm::Vec2) {}
 }

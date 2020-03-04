@@ -5,81 +5,142 @@ use bvh::bvh::BVH;
 use bvh::ray::Ray;
 use crate::shape::*;
 use crate::sphere::*;
+use crate::triangle::*;
+use crate::model::Vertex;
 
 pub struct Hit
 {
     pub pos: glm::Vec3,
     pub normal: glm::Vec3,
+    pub tangent: glm::Vec3,
+    pub bitangent: glm::Vec3,
     pub material_id: u32,
     pub time: f32,
 }
 
 pub struct SceneGraph
 {
-    pub objects: Vec<Sphere>,
+    pub spheres: Vec<Sphere>,
+    pub triangles: Vec<Triangle>,
     pub bvh: Option<BVH>,
 }
 
 impl SceneGraph
 {
-    pub fn add(&mut self, sphere: Sphere)
+    pub fn add_sphere(&mut self, sphere: Sphere)
     {
-        self.objects.push(sphere);
+        self.spheres.push(sphere);
     }
 
+    pub fn add_tri(&mut self, v0: Vertex, v1: Vertex, v2: Vertex, material_id: u32)
+    {
+        self.triangles.push(Triangle {
+            v0,
+            v1,
+            v2,
+            material_id,
+            node_index: 0usize,
+        });
+    }
+
+    #[allow(dead_code)]
     pub fn clear(&mut self)
     {
-        self.objects.clear();
+        self.spheres.clear();
     }
 
     pub fn build(&mut self)
     {
-        self.bvh = Some(BVH::build(&mut self.objects));
+        let bvh = BVH::build(&mut self.triangles);
+        self.bvh = Some(bvh);
     }
 
     pub fn traverse(&self, origin: glm::Vec3, direction: glm::Vec3) -> Option<Hit>
     {
+
         let nalgebra_origin = bvh::nalgebra::Point3::new(origin.x, origin.y, origin.z);
         let nalgebra_direction = bvh::nalgebra::Vector3::new(direction.x, direction.y, direction.z);
-
         let ray = Ray::new(nalgebra_origin, nalgebra_direction);
 
         if let Some(bvh) = &self.bvh
         {
-            let bb_hit_objects = bvh.traverse(&ray, &self.objects);
+            let bb_hit_objects = bvh.traverse(&ray, &self.triangles);
 
             if !bb_hit_objects.is_empty()
             {
-                let mut closest_hit = None;
+                let mut closest_obj = None;
                 let mut closest_t = std::f32::MAX;
+                let mut closest_barry = glm::vec2(0f32, 0f32);
 
-                for obj in bb_hit_objects
+                for obj in &bb_hit_objects
                 {
-                    let t = obj.intersect(origin, direction);
+                    let mut barry = glm::vec2(0f32, 0f32);
+                    let t = obj.intersect(origin, direction, &mut barry);
                     if let Some(t) = t
                     {
-                        if t <= closest_t
+                        if t <= closest_t && t > 0f32
                         {
-                            let hit_pos = origin + (direction * t);
-                            let normal = obj.get_normal(hit_pos);
-                            let material_id = obj.get_material_id();
-
                             closest_t = t;
-                            closest_hit = Some(Hit
-                            {
-                                pos: hit_pos,
-                                normal,
-                                material_id,
-                                time: t,
-                            });
+                            closest_obj = Some(obj);
+                            closest_barry = barry;
                         }
                     }
                 }
 
-                return closest_hit;
+                if let Some(closest_obj) = closest_obj
+                {
+                    let mut tangent = glm::vec3(0f32, 0f32, 0f32);
+                    let mut bitangent = glm::vec3(0f32, 0f32, 0f32);
+
+                    let hit_pos = origin + (direction * closest_t);
+                    let normal = closest_obj.get_normal(hit_pos, closest_barry);
+                    let material_id = closest_obj.get_material_id();
+                    closest_obj.get_tangents(normal, &mut tangent, &mut bitangent, closest_barry);
+
+                    return Some(Hit
+                    {
+                        pos: hit_pos,
+                        normal,
+                        tangent,
+                        bitangent,
+                        material_id,
+                        time: closest_t,
+                    });
+                }
             }
         }
 
         return None;
+    }
+
+    pub fn traverse_shadow(&self, origin: glm::Vec3, direction: glm::Vec3, max_distance: f32) -> bool
+    {
+        let nalgebra_origin = bvh::nalgebra::Point3::new(origin.x, origin.y, origin.z);
+        let nalgebra_direction = bvh::nalgebra::Vector3::new(direction.x, direction.y, direction.z);
+        let ray = Ray::new(nalgebra_origin, nalgebra_direction);
+
+        if let Some(bvh) = &self.bvh
+        {
+            let bb_hit_objects = bvh.traverse(&ray, &self.triangles);
+
+            if !bb_hit_objects.is_empty()
+            {
+                for obj in &bb_hit_objects
+                {
+                    let mut barry = glm::vec2(0f32, 0f32);
+                    let t = obj.intersect(origin, direction, &mut barry);
+
+                    if let Some(t) = t
+                    {
+                        if t <= max_distance
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }
