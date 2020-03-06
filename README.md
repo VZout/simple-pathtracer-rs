@@ -13,6 +13,7 @@
 * Physically Based Isotropic Shading
 * Model Loading
 * Multi Threading
+* Intel Open Image Denoise
 
 ## Gallery
 
