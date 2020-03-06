@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct ResourceManager<R, L>
-    where R: Default,
-    L: ResourceLoader<R>
+    where L: ResourceLoader<R>
 {
     next_id: u32,
     loader: L,
@@ -12,7 +11,7 @@ pub struct ResourceManager<R, L>
 
 #[allow(dead_code)]
 impl<R, L> ResourceManager<R, L>
-    where R: Default,
+    where
     L: ResourceLoader<R>,
 {
     pub fn new(loader: L) -> Self
@@ -45,15 +44,15 @@ impl<R, L> ResourceManager<R, L>
         return id;
     }
 
-    pub fn place(&mut self, r: R) -> u32
+    pub fn get_mut(&mut self, id: &u32) -> Option<&mut Arc<R>>
     {
-        let id = self.next_id;
-        self.next_id += 1;
+        return self.cache.get_mut(&id);
+    }
 
-        let resource = Arc::new(r);
+    pub fn set(&mut self, id: u32, item: R)
+    {
+        let resource = Arc::new(item);
         self.cache.insert(id, resource.clone());
-
-        return id;
     }
 
     pub fn get(&self, id: &u32) -> Option<Arc<R>>

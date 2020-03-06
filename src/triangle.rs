@@ -96,4 +96,9 @@ impl Shape for Triangle {
         *tangent = glm::normalize((self.v0.tangent * (1f32 - barry.x - barry.y)) + (self.v1.tangent * barry.x) + ( self.v2.tangent * barry.y));
         *bitangent = glm::normalize((self.v0.bitangent * (1f32 - barry.x - barry.y)) + (self.v1.bitangent * barry.x) + ( self.v2.bitangent * barry.y));
     }
+
+    fn get_uv(&self, barry: glm::Vec2) -> glm::Vec2
+    {
+        return (self.v0.uv * (1f32 - barry.x - barry.y)) + (self.v1.uv * barry.x) + ( self.v2.uv * barry.y);
+    }
 }

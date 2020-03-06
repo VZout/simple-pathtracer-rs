@@ -4,7 +4,6 @@ extern crate glm;
 use bvh::bvh::BVH;
 use bvh::ray::Ray;
 use crate::shape::*;
-use crate::sphere::*;
 use crate::triangle::*;
 use crate::model::Vertex;
 
@@ -14,24 +13,19 @@ pub struct Hit
     pub normal: glm::Vec3,
     pub tangent: glm::Vec3,
     pub bitangent: glm::Vec3,
+    pub uv: glm::Vec2,
     pub material_id: u32,
     pub time: f32,
 }
 
 pub struct SceneGraph
 {
-    pub spheres: Vec<Sphere>,
     pub triangles: Vec<Triangle>,
     pub bvh: Option<BVH>,
 }
 
 impl SceneGraph
 {
-    pub fn add_sphere(&mut self, sphere: Sphere)
-    {
-        self.spheres.push(sphere);
-    }
-
     pub fn add_tri(&mut self, v0: Vertex, v1: Vertex, v2: Vertex, material_id: u32)
     {
         self.triangles.push(Triangle {
@@ -46,7 +40,7 @@ impl SceneGraph
     #[allow(dead_code)]
     pub fn clear(&mut self)
     {
-        self.spheres.clear();
+        self.triangles.clear();
     }
 
     pub fn build(&mut self)
@@ -95,6 +89,7 @@ impl SceneGraph
                     let hit_pos = origin + (direction * closest_t);
                     let normal = closest_obj.get_normal(hit_pos, closest_barry);
                     let material_id = closest_obj.get_material_id();
+                    let uv = closest_obj.get_uv(closest_barry);
                     closest_obj.get_tangents(normal, &mut tangent, &mut bitangent, closest_barry);
 
                     return Some(Hit
@@ -103,6 +98,7 @@ impl SceneGraph
                         normal,
                         tangent,
                         bitangent,
+                        uv,
                         material_id,
                         time: closest_t,
                     });
@@ -111,6 +107,11 @@ impl SceneGraph
         }
 
         return None;
+    }
+
+    pub fn tri_count(&self) -> usize
+    {
+        return self.triangles.len();
     }
 
     pub fn traverse_shadow(&self, origin: glm::Vec3, direction: glm::Vec3, max_distance: f32) -> bool

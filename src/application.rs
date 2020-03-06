@@ -12,6 +12,29 @@ pub struct Pixel
     pub a: f32,
 }
 
+pub fn pixel_to_vec3(pixel: &Pixel) -> glm::Vec3
+{
+    return glm::vec3(pixel.r, pixel.g, pixel.b);
+}
+
+pub fn vec3_to_pixel(v: &glm::Vec3) -> Pixel
+{
+    return Pixel{ r: v.x, g: v.y, b: v.z, a: 1f32 };
+}
+
+pub fn f32vec_from_pixels(pixels: &Vec<Pixel>) -> Vec<f32>
+{
+    let mut input_img = Vec::new();
+    for pixel in pixels
+    {
+        input_img.push(pixel.r);
+        input_img.push(pixel.g);
+        input_img.push(pixel.b);
+    }
+
+    return input_img;
+}
+
 macro_rules! TRY_D
 {
     ($e: expr) =>
@@ -32,7 +55,6 @@ pub struct RenderTexture
     pub id: u32,
 }
 
-#[allow(dead_code)] // The user may not need to use everything.
 pub struct Application
 {
     pub sdl_context: sdl2::Sdl,

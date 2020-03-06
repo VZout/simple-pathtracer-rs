@@ -6,4 +6,5 @@ pub trait Shape: Sync + Send
     fn get_normal(&self, hit_pos: glm::Vec3, barry: glm::Vec2) -> glm::Vec3;
     fn get_material_id(&self) -> u32;
     fn get_tangents(&self, normal: glm::Vec3, tangent: &mut glm::Vec3, bitangent: &mut glm::Vec3, barry: glm::Vec2);
+    fn get_uv(&self, barry: glm::Vec2) -> glm::Vec2;
 }

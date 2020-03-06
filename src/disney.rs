@@ -13,6 +13,27 @@ pub fn reflect(i: glm::Vec3, n: glm::Vec3) -> glm::Vec3
     return i - n * 2f32 * glm::dot(i, n);
 }
 
+pub fn calculate_csw(material: &SurfaceMaterial) -> f32
+{
+    let specular_tint = glm::vec3(1f32, 1f32, 1f32);
+
+    let cd_lum = luminance(material.color);
+    let c_tint = if cd_lum > 0f32
+    {
+        material.color / cd_lum
+    }
+    else
+    {
+        glm::vec3(1f32, 1f32, 1f32)
+    };
+    let c_spec0 = glm::mix(glm::mix(glm::vec3(1f32, 1f32, 1f32), c_tint, specular_tint) * material.specular * 0.08f32, material.color, glm::vec3(material.metallic, material.metallic, material.metallic)); // TODO: This is f0?
+
+    let cs_lum = luminance(c_spec0);
+    let cs_w = cs_lum / (cs_lum + (1.0 - material.metallic) * cd_lum);
+
+    return cs_w;
+}
+
 #[allow(dead_code)]
 fn shadow_terminator_term_chiang2019(hit: &Hit, l: glm::Vec3) -> f32
 {
@@ -53,12 +74,7 @@ fn cos_hemisphere_sample(u: glm::Vec2) -> glm::Vec3
 
 fn spherical_direction(sin_theta: f32, cos_theta: f32, sin_phi: f32, cos_phi: f32) -> glm::Vec3
 {
-    return glm::vec3(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
-}
-
-fn lambert() -> f32
-{
-    return 1f32 / PI;
+    return glm::normalize(glm::vec3(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta));
 }
 
 // Aproximate Luminance
@@ -67,9 +83,19 @@ fn luminance(rgb: glm::Vec3) -> f32
     return glm::dot(rgb, glm::vec3(0.2126f32, 0.7152f32, 0.0722f32));
 }
 
-fn diffuse(material: &Material) -> glm::Vec3
+fn diffuse_lambert(material: &SurfaceMaterial) -> glm::Vec3
 {
-    return material.color * lambert();
+    return material.color / PI;
+}
+
+fn diffuse_burley(material: &SurfaceMaterial, n_dot_l: f32, n_dot_v: f32, l_dot_h: f32) -> glm::Vec3
+{
+    let fl = schlick_fresnel_reflectance(n_dot_l);
+    let fv = schlick_fresnel_reflectance(n_dot_v);
+    let lambert = 1.0f32;
+    let fd90 = 0.5f32 + 2.0f32 * l_dot_h * l_dot_h * material.roughness;
+
+    return diffuse_lambert(&material) * (1f32 + (fd90 -1f32) * fl) * (1f32 + (fd90 - 1f32) * fv);
 }
 
 fn gtr2(n_dot_h: f32, a: f32) -> f32
@@ -109,7 +135,7 @@ fn g_schlick_smith_ggx_fast(n_dot_l: f32, n_dot_v: f32, roughness: f32) -> f32
 }
 
 // Microfacet Isotropic
-fn specular_isotropic(material: &Material, n_dot_l: f32, n_dot_v: f32, n_dot_h: f32, l_dot_h: f32) -> glm::Vec3
+fn specular_isotropic(material: &SurfaceMaterial, n_dot_l: f32, n_dot_v: f32, n_dot_h: f32, l_dot_h: f32) -> glm::Vec3
 {
     let specular_tint = glm::vec3(1f32, 1f32, 1f32);
 
@@ -158,7 +184,7 @@ fn sample_diffuse(hit: &Hit, v: glm::Vec3, u: glm::Vec2) -> glm::Vec3
 }
 
 // Microfacet Isotropic
-fn pdf_specular_isotropic(hit: &Hit, material: &Material, v: glm::Vec3, l: glm::Vec3) -> f32
+fn pdf_specular_isotropic(hit: &Hit, material: &SurfaceMaterial, v: glm::Vec3, l: glm::Vec3) -> f32
 {
     let h = glm::normalize(v + l); //TODO: Extract h
 
@@ -169,7 +195,7 @@ fn pdf_specular_isotropic(hit: &Hit, material: &Material, v: glm::Vec3, l: glm::
     let cos2_theta = n_dot_h * n_dot_h;
     let denom = cos2_theta * (alpha2 - 1f32) + 1f32;
 
-    if  denom == 0f32
+    if denom == 0f32
     {
         return 0f32;
     }
@@ -179,42 +205,39 @@ fn pdf_specular_isotropic(hit: &Hit, material: &Material, v: glm::Vec3, l: glm::
 }
 
 // Sample Microfacet Isotropic
-fn sample_specular_isotropic(hit: &Hit, material: &Material, v: glm::Vec3, u: glm::Vec2) -> glm::Vec3
+fn sample_specular_isotropic(hit: &Hit, material: &SurfaceMaterial, v: glm::Vec3, u: glm::Vec2) -> glm::Vec3
 {
     let phi = (TWO_PI) * u[0];
     let alpha = material.roughness * material.roughness;
+    let a = material.roughness;
 
     let tan_theta2 = alpha * alpha * u[1] / (1f32 - u[1]);
+    //let cos_theta = ((1.0 - u[1]) / (1.0 + (a*a-1.0) * u[0])).sqrt();
     let cos_theta = 1f32 / (1f32 + tan_theta2).sqrt();
-    let sin_theta = (1f32 - cos_theta * cos_theta).max(0f32).sqrt();
+    let sin_theta = (1f32 - (cos_theta * cos_theta)).max(0f32).sqrt();
 
     let h_local = spherical_direction(sin_theta, cos_theta, phi.sin(), phi.cos());
 
     let mut h = (hit.tangent * h_local.x) + (hit.bitangent * h_local.y) + (hit.normal * h_local.z);
 
-    if !same_hemisphere(&hit, v, h) {
+    if !same_hemisphere(&hit, v, h)
+    {
         h = h * -1f32;
     }
 
     return reflect(-v, h);
 }
 
-pub fn pdf(hit: &Hit, material: &Material, v: glm::Vec3, l: glm::Vec3) -> f32
+pub fn pdf(hit: &Hit, material: &SurfaceMaterial, v: glm::Vec3, l: glm::Vec3) -> f32
 {
-    if same_hemisphere(&hit, v, l)
-    {
-        let pdf_diff = pdf_diffuse(&hit, l);
-        let pdf_spec = pdf_specular_isotropic(&hit, material, v, l);
+    // TODO: check if is same hemisphere?
+    let pdf_diff = pdf_diffuse(&hit, l);
+    let pdf_spec = pdf_specular_isotropic(&hit, material, v, l);
 
-        return (pdf_diff + pdf_spec) / 2f32;
-    }
-    else
-    {
-        return 0f32;
-    }
+    return (pdf_diff + pdf_spec) / 2f32;
 }
 
-pub fn sample(hit: &Hit, material: &Material, v: glm::Vec3, rng: &mut RandGenerator) -> glm::Vec3
+pub fn sample(hit: &Hit, material: &SurfaceMaterial, v: glm::Vec3, rng: &mut RandGenerator) -> glm::Vec3
 {
     let u = next_rand_v2(rng);
     let rnd = next_rand(rng);
@@ -229,9 +252,10 @@ pub fn sample(hit: &Hit, material: &Material, v: glm::Vec3, rng: &mut RandGenera
     }
 }
 
-pub fn evaluate(material: &Material, n_dot_l: f32, n_dot_v: f32, n_dot_h: f32, l_dot_h: f32) -> glm::Vec3
+pub fn evaluate(material: &SurfaceMaterial, n_dot_l: f32, n_dot_v: f32, n_dot_h: f32, l_dot_h: f32) -> glm::Vec3
 {
-    let diffuse = diffuse(&material);
+    //let diffuse = diffuse(&material);
+    let diffuse = diffuse_burley(&material, n_dot_l, n_dot_v, l_dot_h);
     let specular = specular_isotropic(&material, n_dot_l, n_dot_v, n_dot_h, l_dot_h);
 
     let retval = diffuse
@@ -241,13 +265,12 @@ pub fn evaluate(material: &Material, n_dot_l: f32, n_dot_v: f32, n_dot_h: f32, l
     return retval * n_dot_l;
 }
 
-pub fn direct_lighting(scene: &SceneGraph, hit: &Hit, material: &Material, v: glm::Vec3) -> glm::Vec3
+pub fn direct_lighting(scene: &SceneGraph, hit: &Hit, material: &SurfaceMaterial, v: glm::Vec3) -> glm::Vec3
 {
     //let l = glm::normalize(glm::vec3(0.5f32, 1f32, -0.9f32));
     let l = glm::normalize(glm::vec3(0f32, 1f32, 0f32));
     let h = glm::normalize(v + l);
 
-    // ----> NOTE: ZERO HERE DISABLES LIGHTING <----
     let emission = /*light color*/ glm::vec3(1f32, 1f32, 1f32) * 2f32;
 
     let obstructed = scene.traverse_shadow(hit.pos, l, 1000f32);

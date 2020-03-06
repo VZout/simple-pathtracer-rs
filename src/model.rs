@@ -20,6 +20,7 @@ pub struct Vertex
     pub normal: glm::Vec3,
     pub tangent: glm::Vec3,
     pub bitangent: glm::Vec3,
+    pub uv: glm::Vec2,
 }
 
 #[derive(Debug)]
@@ -62,6 +63,7 @@ impl Default for Vertex
             normal: glm::vec3(1f32, 0f32, 0f32),
             tangent: glm::vec3(1f32, 0f32, 0f32),
             bitangent: glm::vec3(1f32, 0f32, 0f32),
+            uv: glm::vec2(0f32, 0f32),
         }
     }
 }
@@ -77,30 +79,20 @@ impl ResourceLoader<Model> for ModelLoader {
         let mut model = Model::default();
 
         let mut importer = Importer::new();
-        //importer.triangulate(true);
+        importer.triangulate(true);
         importer.calc_tangent_space(|x| x.enable = true);
         importer.pre_transform_vertices(|x| {
             x.enable = true;
             x.normalize = false
         });
-        //importer.join_identical_vertices(true);
+        importer.join_identical_vertices(true);
 
         let scene = importer.read_file(path)?;
         for ai_mesh in scene.mesh_iter()
         {
             let mut mesh = Mesh::default();
 
-           /* mesh.vertices = ai_mesh.vertex_iter().zip(ai_mesh.normal_iter(), ai_mesh.tangent_iter()).map(|(v, n, t)|
-                Vertex
-                {
-                    pos: glm::vec3(v.x, v.y, v.z),
-                    normal: glm::vec3(n.x, n.y, n.z),
-                    tangent: glm::vec3(t.x, t.y, t.z),
-                    bitangent: glm::vec3(n.x, n.y, n.z),
-                }
-            ).collect();*/
-
-            for (v, n, t, b) in izip!(ai_mesh.vertex_iter(), ai_mesh.normal_iter(), ai_mesh.tangent_iter(), ai_mesh.bitangent_iter())
+            for (v, n, t, b, u) in izip!(ai_mesh.vertex_iter(), ai_mesh.normal_iter(), ai_mesh.tangent_iter(), ai_mesh.bitangent_iter(), ai_mesh.texture_coords_iter(0))
             {
                 mesh.vertices.push(Vertex
                 {
@@ -108,6 +100,7 @@ impl ResourceLoader<Model> for ModelLoader {
                     normal: glm::vec3(n.x, n.y, n.z),
                     tangent: glm::vec3(t.x, t.y, t.z),
                     bitangent: glm::vec3(b.x, b.y, b.z),
+                    uv: glm::vec2(u.x, u.y),
                 });
             };
 
