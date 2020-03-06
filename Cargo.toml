@@ -3,7 +3,7 @@ name = "rust_gl"
 version = "0.1.0"
 authors = ["Viktor Zoutman <viktor@vzout.com>"]
 edition = "2018"
-description = "A simple CPU raytracer which abstracts all non-raytracing code"
+description = "A simple CPU raytracer"
 homepage = "https://vzout.com"
 keywords = ["raytracing", "multi-threading", "simd", "opengl"]
 categories = ["graphics"]
@@ -16,6 +16,7 @@ panic = 'abort'
 
 [dependencies]
 glm = "0.2.3"
+image = "0.23.0"
 itertools = "0.8.2"
 
 [dependencies.rayon]
@@ -31,11 +32,11 @@ version = "0.3.1"
 version = "0.7.3"
 features = ["small_rng"]
 
-[dependencies.crossbeam]
-version = "0.7.3"
-
 [dependencies.gl]
 version = "0.14.0"
+
+[dependencies.oidn]
+git = "https://github.com/Twinklebear/oidn-rs"
 
 [dependencies.sdl2]
 git = "https://github.com/Rust-SDL2/rust-sdl2"
